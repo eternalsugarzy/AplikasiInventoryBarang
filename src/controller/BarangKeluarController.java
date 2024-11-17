@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class BarangKeluarController {
+
     private Connection connection;
 
     public BarangKeluarController() {
@@ -13,17 +14,18 @@ public class BarangKeluarController {
     }
 
     public void tambahBarangKeluar(BarangKeluar barang) {
-        String query = "INSERT INTO barang_keluar (nama_barang, jumlah, tanggal) VALUES (?, ?, ?)";
+        String query = "INSERT INTO barang_keluar (nama_barang, kategori, jumlah, tanggal) VALUES (?, ?, ?, ?)";
         try (PreparedStatement stmt = connection.prepareStatement(query)) {
             stmt.setString(1, barang.getNamaBarang());
-            stmt.setInt(2, barang.getJumlah());
-            stmt.setString(3, barang.getTanggal());
+            stmt.setString(2, barang.getKategori());
+            stmt.setInt(3, barang.getJumlah());
+            stmt.setString(4, barang.getTanggal());
             stmt.executeUpdate();
         } catch (SQLException e) {
             e.printStackTrace();
         }
     }
-    
+
     // Fungsi untuk menghapus barang keluar berdasarkan ID
     public void hapusBarangKeluar(int id) {
         String query = "DELETE FROM barang_keluar WHERE id = ?";
@@ -34,40 +36,42 @@ public class BarangKeluarController {
             e.printStackTrace();
         }
     }
-    
+
     // Fungsi untuk memperbarui data barang keluar
-    public void updateBarangKeluar(int id, String nama, int jumlah, String tanggal) {
-        String query = "UPDATE barang_keluar SET nama_barang = ?, jumlah = ?, tanggal = ? WHERE id = ?";
+    public void updateBarangKeluar(int id, String nama, String kategori, int jumlah, String tanggal) {
+        String query = "UPDATE barang_keluar SET nama_barang = ?, kategori = ?, jumlah = ?, tanggal = ? WHERE id = ?";
         try (PreparedStatement stmt = connection.prepareStatement(query)) {
             stmt.setString(1, nama);
-            stmt.setInt(2, jumlah);
-            stmt.setString(3, tanggal);
-            stmt.setInt(4, id);
+            stmt.setString(2, kategori);
+            stmt.setInt(3, jumlah);
+            stmt.setString(4, tanggal);
+            stmt.setInt(5, id);
             stmt.executeUpdate();
         } catch (SQLException e) {
             e.printStackTrace();
         }
     }
-    
+
     // Fungsi untuk mendapatkan daftar barang keluar dari database
     public List<BarangKeluar> getDaftarBarangKeluar() {
         List<BarangKeluar> daftarBarang = new ArrayList<>();
         String query = "SELECT * FROM barang_keluar";
-        try (Statement stmt = connection.createStatement();
-             ResultSet rs = stmt.executeQuery(query)) {
+        try (Statement stmt = connection.createStatement()) {
+            ResultSet rs = stmt.executeQuery(query);
             while (rs.next()) {
                 int id = rs.getInt("id");
                 String nama = rs.getString("nama_barang");
+                String kategori = rs.getString("kategori");
                 int jumlah = rs.getInt("jumlah");
                 String tanggal = rs.getString("tanggal");
-                daftarBarang.add(new BarangKeluar(id, nama, jumlah, tanggal));
+                daftarBarang.add(new BarangKeluar(id, nama, kategori, jumlah, tanggal));
             }
         } catch (SQLException e) {
             e.printStackTrace();
         }
         return daftarBarang;
     }
-    
+
     // Fungsi untuk mendapatkan data barang keluar berdasarkan ID
     public BarangKeluar getBarangKeluarById(int id) {
         String query = "SELECT * FROM barang_keluar WHERE id = ?";
@@ -76,9 +80,12 @@ public class BarangKeluarController {
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
                     String nama = rs.getString("nama_barang");
+                    String kategori = rs.getString("kategori"); // Tambahkan ini
                     int jumlah = rs.getInt("jumlah");
                     String tanggal = rs.getString("tanggal");
-                    return new BarangKeluar(id, nama, jumlah, tanggal);
+
+                    // Sesuaikan konstruktor dengan field kategori
+                    return new BarangKeluar(id, nama, kategori, jumlah, tanggal);
                 }
             }
         } catch (SQLException e) {
@@ -86,4 +93,5 @@ public class BarangKeluarController {
         }
         return null;
     }
+
 }

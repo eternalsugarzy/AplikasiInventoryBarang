@@ -23,27 +23,46 @@ public class BarangMasukView extends javax.swing.JFrame {
 
         // Event listener untuk tabel
         tblBarangMasuk.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 int selectedRow = tblBarangMasuk.getSelectedRow();
+
                 if (selectedRow != -1) {
-                    txtIdMasuk.setText(model.getValueAt(selectedRow, 0).toString()); // Tampilkan ID
-                    txtNamaBarang.setText(model.getValueAt(selectedRow, 1).toString());
-                    txtJumlah.setText(model.getValueAt(selectedRow, 2).toString());
-                    txtHarga.setText(model.getValueAt(selectedRow, 3).toString());
-                    try {
-                        // Ambil tanggal dari tabel sebagai String
-                        String tanggalString = model.getValueAt(selectedRow, 4).toString();
+                    if (model != null) {
+                        // Cek apakah semua kolom tidak null sebelum diakses
+                        Object id = model.getValueAt(selectedRow, 0);
+                        Object namaBarang = model.getValueAt(selectedRow, 1);
+                        Object kategori = model.getValueAt(selectedRow, 2);
+                        Object jumlah = model.getValueAt(selectedRow, 3);
+                        Object harga = model.getValueAt(selectedRow, 4);
+                        Object tanggalString = model.getValueAt(selectedRow, 5);
 
-                        // Ubah String menjadi Date
-                        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
-                        Date tanggal = dateFormat.parse(tanggalString);
+                        if (id != null) {
+                            txtIdMasuk.setText(id.toString());
+                        }
+                        if (namaBarang != null) {
+                            txtNamaBarang.setText(namaBarang.toString());
+                        }
+                        if (kategori != null) {
+                            txtKategori.setText(kategori.toString());
+                        }
+                        if (jumlah != null) {
+                            txtJumlah.setText(jumlah.toString());
+                        }
+                        if (harga != null) {
+                            txtHarga.setText(harga.toString());
+                        }
 
-                        // Set tanggal ke JDateChooser
-                        dateChooserMasuk.setDate(tanggal);
-                    } catch (ParseException e) {
-                        e.printStackTrace();
+                        try {
+                            if (tanggalString != null) {
+                                SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+                                Date tanggal = dateFormat.parse(tanggalString.toString());
+                                dateChooserMasuk.setDate(tanggal);
+                            }
+                        } catch (ParseException e) {
+                            e.printStackTrace();
+                        }
                     }
-
                 }
             }
         });
@@ -58,23 +77,17 @@ public class BarangMasukView extends javax.swing.JFrame {
 
     private void tambahBarang() {
         String nama = txtNamaBarang.getText();
+        String kategori = txtKategori.getText();
         int jumlah = Integer.parseInt(txtJumlah.getText());
         double harga = Double.parseDouble(txtHarga.getText());
+        String tanggal = formatTanggal(dateChooserMasuk.getDate());
 
-        // Ambil tanggal dari JDateChooser
-        Date selectedDate = dateChooserMasuk.getDate();
-        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
-        String tanggal = (selectedDate != null) ? dateFormat.format(selectedDate) : null;
-
-        // Pastikan tanggal tidak null sebelum menyimpan
         if (tanggal != null) {
-            BarangMasuk barang = new BarangMasuk(0, nama, jumlah, harga, tanggal);
+            BarangMasuk barang = new BarangMasuk(0, nama, kategori, jumlah, harga, tanggal);
             controller.tambahBarangMasuk(barang);
             JOptionPane.showMessageDialog(this, "Barang masuk berhasil ditambahkan!");
             clearFields();
             loadData();
-        } else {
-            JOptionPane.showMessageDialog(this, "Tanggal tidak boleh kosong!", "Error", JOptionPane.ERROR_MESSAGE);
         }
     }
 
@@ -94,8 +107,10 @@ public class BarangMasukView extends javax.swing.JFrame {
     private void perbaruiBarang() {
         int selectedRow = tblBarangMasuk.getSelectedRow();
         if (selectedRow != -1) {
+            // Ambil data dari tabel dan textfield
             int id = (int) model.getValueAt(selectedRow, 0);
             String nama = txtNamaBarang.getText();
+            String kategori = txtKategori.getText();
             int jumlah;
             double harga;
 
@@ -113,9 +128,15 @@ public class BarangMasukView extends javax.swing.JFrame {
                 return;
             }
 
+            // Validasi jika kategori atau tanggal kosong
+            if (kategori.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "Kategori tidak boleh kosong!", "Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
             if (tanggal != null) {
                 // Perbarui data di database
-                controller.updateBarangMasuk(id, nama, jumlah, harga, tanggal);
+                controller.updateBarangMasuk(id, nama, kategori, jumlah, harga, tanggal);
                 JOptionPane.showMessageDialog(this, "Barang masuk berhasil diperbarui!");
 
                 clearFields();
@@ -130,12 +151,14 @@ public class BarangMasukView extends javax.swing.JFrame {
 
     // Method untuk memuat data dari database ke tabel
     private void loadData() {
-        model.setRowCount(0); // Membersihkan tabel sebelum memuat data
+        model.setRowCount(0); // Bersihkan tabel sebelum memuat data baru
         List<BarangMasuk> daftarBarang = controller.getDaftarBarangMasuk();
+
         for (BarangMasuk barang : daftarBarang) {
             model.addRow(new Object[]{
                 barang.getId(),
                 barang.getNamaBarang(),
+                barang.getKategori(),
                 barang.getJumlah(),
                 barang.getHarga(),
                 barang.getTanggal()
@@ -145,10 +168,12 @@ public class BarangMasukView extends javax.swing.JFrame {
 
     // Method untuk membersihkan field input
     private void clearFields() {
+        txtIdMasuk.setText("");
         txtNamaBarang.setText("");
+        txtKategori.setText("");
         txtJumlah.setText("");
         txtHarga.setText("");
-        dateChooserMasuk.setDate(null); // Kosongkan JDateChooser
+        dateChooserMasuk.setDate(null);
     }
 
     // Method untuk memformat tanggal
@@ -213,6 +238,8 @@ public class BarangMasukView extends javax.swing.JFrame {
         lblNamaBarang1 = new javax.swing.JLabel();
         txtIdMasuk = new javax.swing.JTextField();
         dateChooserMasuk = new com.toedter.calendar.JDateChooser();
+        lblJumlah1 = new javax.swing.JLabel();
+        txtKategori = new javax.swing.JTextField();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
@@ -256,13 +283,13 @@ public class BarangMasukView extends javax.swing.JFrame {
 
         tblBarangMasuk.setModel(new javax.swing.table.DefaultTableModel(
             new Object [][] {
-                {null, null, null, null, null},
-                {null, null, null, null, null},
-                {null, null, null, null, null},
-                {null, null, null, null, null}
+                {null, null, null, null, null, null},
+                {null, null, null, null, null, null},
+                {null, null, null, null, null, null},
+                {null, null, null, null, null, null}
             },
             new String [] {
-                "ID Barang", "Nama Barang", "Jumlah", "Harga", "Tanggal Masuk"
+                "ID Barang", "Nama Barang", "Kategori", "Jumlah", "Harga", "Tanggal Masuk"
             }
         ));
         jScrollPane1.setViewportView(tblBarangMasuk);
@@ -273,6 +300,8 @@ public class BarangMasukView extends javax.swing.JFrame {
 
         txtIdMasuk.setEditable(false);
 
+        lblJumlah1.setText("Kategori");
+
         javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
         jPanel1.setLayout(jPanel1Layout);
         jPanel1Layout.setHorizontalGroup(
@@ -281,20 +310,27 @@ public class BarangMasukView extends javax.swing.JFrame {
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(jPanel1Layout.createSequentialGroup()
                         .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(lblNamaBarang)
-                            .addComponent(lblJumlah)
-                            .addComponent(lblHarga)
-                            .addComponent(lblTanggal)
-                            .addComponent(lblNamaBarang1))
-                        .addGap(50, 50, 50)
-                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(txtIdMasuk)
-                            .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
-                                .addComponent(txtJumlah, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, 215, Short.MAX_VALUE)
-                                .addComponent(txtNamaBarang, javax.swing.GroupLayout.Alignment.LEADING)
-                                .addComponent(txtHarga)
-                                .addComponent(dateChooserMasuk, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
-                        .addGap(153, 153, 153)
+                            .addGroup(jPanel1Layout.createSequentialGroup()
+                                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                    .addComponent(lblNamaBarang)
+                                    .addComponent(lblNamaBarang1))
+                                .addGap(59, 59, 59)
+                                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                                    .addComponent(txtNamaBarang, javax.swing.GroupLayout.DEFAULT_SIZE, 215, Short.MAX_VALUE)
+                                    .addComponent(txtIdMasuk)))
+                            .addGroup(jPanel1Layout.createSequentialGroup()
+                                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                    .addComponent(lblJumlah)
+                                    .addComponent(lblHarga)
+                                    .addComponent(lblTanggal)
+                                    .addComponent(lblJumlah1))
+                                .addGap(50, 50, 50)
+                                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
+                                    .addComponent(txtKategori)
+                                    .addComponent(txtJumlah, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, 215, Short.MAX_VALUE)
+                                    .addComponent(txtHarga)
+                                    .addComponent(dateChooserMasuk, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                         .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addComponent(btnTambah, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                             .addComponent(btnUpdate, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
@@ -314,11 +350,11 @@ public class BarangMasukView extends javax.swing.JFrame {
                             .addComponent(btnTambah)
                             .addGap(16, 16, 16))
                         .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createSequentialGroup()
-                            .addComponent(txtIdMasuk, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)))
+                            .addComponent(lblNamaBarang1)
+                            .addGap(18, 18, 18)))
                     .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createSequentialGroup()
-                        .addComponent(lblNamaBarang1)
-                        .addGap(18, 18, 18)))
+                        .addComponent(txtIdMasuk, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)))
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
                     .addGroup(jPanel1Layout.createSequentialGroup()
                         .addComponent(btnHapus)
@@ -327,25 +363,35 @@ public class BarangMasukView extends javax.swing.JFrame {
                         .addGap(16, 16, 16)
                         .addComponent(btnTampilkan)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                        .addComponent(btnKeluar))
+                        .addComponent(btnKeluar)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 66, Short.MAX_VALUE))
                     .addGroup(jPanel1Layout.createSequentialGroup()
-                        .addComponent(lblNamaBarang)
-                        .addGap(25, 25, 25)
-                        .addComponent(lblJumlah)
-                        .addGap(25, 25, 25)
-                        .addComponent(lblHarga)
-                        .addGap(25, 25, 25)
-                        .addComponent(lblTanggal)
-                        .addGap(6, 6, 6))
-                    .addGroup(javax.swing.GroupLayout.Alignment.LEADING, jPanel1Layout.createSequentialGroup()
-                        .addComponent(txtNamaBarang, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(19, 19, 19)
-                        .addComponent(txtJumlah, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(18, 18, 18)
-                        .addComponent(txtHarga, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(20, 20, 20)
-                        .addComponent(dateChooserMasuk, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 48, Short.MAX_VALUE)
+                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                            .addGroup(jPanel1Layout.createSequentialGroup()
+                                .addComponent(txtKategori, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addGap(12, 12, 12))
+                            .addGroup(jPanel1Layout.createSequentialGroup()
+                                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                                    .addComponent(lblNamaBarang)
+                                    .addComponent(txtNamaBarang, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                                .addGap(18, 18, 18)
+                                .addComponent(lblJumlah1)
+                                .addGap(24, 24, 24)))
+                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                            .addGroup(jPanel1Layout.createSequentialGroup()
+                                .addComponent(lblJumlah)
+                                .addGap(25, 25, 25)
+                                .addComponent(lblHarga)
+                                .addGap(25, 25, 25)
+                                .addComponent(lblTanggal)
+                                .addGap(6, 6, 6))
+                            .addGroup(javax.swing.GroupLayout.Alignment.LEADING, jPanel1Layout.createSequentialGroup()
+                                .addComponent(txtJumlah, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addGap(18, 18, 18)
+                                .addComponent(txtHarga, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addGap(20, 20, 20)
+                                .addComponent(dateChooserMasuk, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                        .addGap(18, 18, 18)))
                 .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 221, javax.swing.GroupLayout.PREFERRED_SIZE))
         );
 
@@ -431,6 +477,7 @@ public class BarangMasukView extends javax.swing.JFrame {
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JLabel lblHarga;
     private javax.swing.JLabel lblJumlah;
+    private javax.swing.JLabel lblJumlah1;
     private javax.swing.JLabel lblNamaBarang;
     private javax.swing.JLabel lblNamaBarang1;
     private javax.swing.JLabel lblTanggal;
@@ -438,6 +485,7 @@ public class BarangMasukView extends javax.swing.JFrame {
     private javax.swing.JTextField txtHarga;
     private javax.swing.JTextField txtIdMasuk;
     private javax.swing.JTextField txtJumlah;
+    private javax.swing.JTextField txtKategori;
     private javax.swing.JTextField txtNamaBarang;
     // End of variables declaration//GEN-END:variables
 }

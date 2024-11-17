@@ -36,51 +36,44 @@ public class StokView extends javax.swing.JFrame {
 
     // Method untuk memuat data barang masuk dan keluar
     private void loadData() {
-        model.setRowCount(0); // Bersihkan tabel sebelum memuat data baru
+        model.setRowCount(0); // Membersihkan tabel sebelum memuat data baru
 
-        // HashMap untuk menyimpan data kumulatif
+        // HashMap untuk menyimpan total jumlah barang berdasarkan nama
         Map<String, Integer> stokBarang = new HashMap<>();
+        Map<String, String> kategoriBarang = new HashMap<>();
         Map<String, Double> hargaBarang = new HashMap<>();
         Map<String, String> tanggalBarang = new HashMap<>();
-        Map<String, Integer> idBarangMap = new HashMap<>(); // Menyimpan ID Barang
+        Map<String, String> keteranganBarang = new HashMap<>();
 
-        // Muat data dari Barang Masuk dan hitung stok kumulatif
+        // Muat data barang masuk dan akumulasi jumlah
         List<BarangMasuk> daftarBarangMasuk = barangMasukController.getDaftarBarangMasuk();
         for (BarangMasuk barang : daftarBarangMasuk) {
             String namaBarang = barang.getNamaBarang();
-            int jumlahMasuk = barang.getJumlah();
-            stokBarang.put(namaBarang, stokBarang.getOrDefault(namaBarang, 0) + jumlahMasuk);
+            stokBarang.put(namaBarang, stokBarang.getOrDefault(namaBarang, 0) + barang.getJumlah());
+            kategoriBarang.put(namaBarang, barang.getKategori());
             hargaBarang.put(namaBarang, barang.getHarga());
             tanggalBarang.put(namaBarang, barang.getTanggal());
-            idBarangMap.put(namaBarang, barang.getId()); // Simpan ID
+            keteranganBarang.put(namaBarang, "Masuk");
         }
 
-        // Muat data dari Barang Keluar dan hitung stok kumulatif
+        // Muat data barang keluar dan kurangi jumlah
         List<BarangKeluar> daftarBarangKeluar = barangKeluarController.getDaftarBarangKeluar();
         for (BarangKeluar barang : daftarBarangKeluar) {
             String namaBarang = barang.getNamaBarang();
-            int jumlahKeluar = barang.getJumlah();
-            stokBarang.put(namaBarang, stokBarang.getOrDefault(namaBarang, 0) - jumlahKeluar);
+            stokBarang.put(namaBarang, stokBarang.getOrDefault(namaBarang, 0) - barang.getJumlah());
             tanggalBarang.put(namaBarang, barang.getTanggal());
-            if (!idBarangMap.containsKey(namaBarang)) {
-                idBarangMap.put(namaBarang, barang.getId()); // Simpan ID jika belum ada
-            }
+            keteranganBarang.put(namaBarang, "Keluar");
         }
 
-        // Tambahkan data kumulatif ke tabel
+        // Tampilkan data di tabel
         for (String namaBarang : stokBarang.keySet()) {
-            int jumlahStok = stokBarang.get(namaBarang);
-            String harga = hargaBarang.containsKey(namaBarang) ? String.valueOf(hargaBarang.get(namaBarang)) : "-";
-            String tanggal = tanggalBarang.getOrDefault(namaBarang, "-");
-            int idBarang = idBarangMap.getOrDefault(namaBarang, 0);
-
             model.addRow(new Object[]{
-                idBarang, // ID Barang
-                namaBarang, // Nama Barang
-                jumlahStok, // Stok Kumulatif
-                harga, // Harga
-                tanggal, // Tanggal terakhir transaksi
-                "Stok" // Keterangan
+                namaBarang,
+                kategoriBarang.getOrDefault(namaBarang, "-"), // Kategori
+                stokBarang.get(namaBarang), // Jumlah total
+                hargaBarang.getOrDefault(namaBarang, 0.0), // Harga
+                tanggalBarang.getOrDefault(namaBarang, "-"), // Tanggal terakhir
+                keteranganBarang.getOrDefault(namaBarang, "-") // Keterangan (Masuk/Keluar)
             });
         }
     }
@@ -117,7 +110,7 @@ public class StokView extends javax.swing.JFrame {
                 {null, null, null, null, null, null}
             },
             new String [] {
-                "ID Barang", "Nama Barang", "Jumlah", "Harga", "Tanggal", "Keterangan"
+                "Nama Barang", "Kategori", "Jumlah", "Harga", "Tanggal", "Keterangan"
             }
         ));
         jScrollPane1.setViewportView(tblStok);

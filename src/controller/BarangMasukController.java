@@ -15,12 +15,13 @@ public class BarangMasukController {
 
     // Fungsi untuk menambahkan barang masuk
     public void tambahBarangMasuk(BarangMasuk barang) {
-        String query = "INSERT INTO barang_masuk (nama_barang, jumlah, harga, tanggal) VALUES (?, ?, ?, ?)";
+        String query = "INSERT INTO barang_masuk (nama_barang, jumlah, harga, tanggal, kategori) VALUES (?, ?, ?, ?, ?)";
         try (PreparedStatement stmt = connection.prepareStatement(query)) {
             stmt.setString(1, barang.getNamaBarang());
             stmt.setInt(2, barang.getJumlah());
             stmt.setDouble(3, barang.getHarga());
             stmt.setString(4, barang.getTanggal());
+            stmt.setString(5, barang.getKategori());
             stmt.executeUpdate();
         } catch (SQLException e) {
             e.printStackTrace();
@@ -39,14 +40,15 @@ public class BarangMasukController {
     }
 
     // Fungsi untuk memperbarui data barang masuk
-    public void updateBarangMasuk(int id, String nama, int jumlah, double harga, String tanggal) {
-        String query = "UPDATE barang_masuk SET nama_barang = ?, jumlah = ?, harga = ?, tanggal = ? WHERE id = ?";
+    public void updateBarangMasuk(int id, String nama, String kategori, int jumlah, double harga, String tanggal) {
+        String query = "UPDATE barang_masuk SET nama_barang = ?, kategori = ?, jumlah = ?, harga = ?, tanggal = ? WHERE id = ?";
         try (PreparedStatement stmt = connection.prepareStatement(query)) {
             stmt.setString(1, nama);
-            stmt.setInt(2, jumlah);
-            stmt.setDouble(3, harga);
-            stmt.setString(4, tanggal);
-            stmt.setInt(5, id);
+            stmt.setString(2, kategori);
+            stmt.setInt(3, jumlah);
+            stmt.setDouble(4, harga);
+            stmt.setString(5, tanggal);
+            stmt.setInt(6, id);
             stmt.executeUpdate();
         } catch (SQLException e) {
             e.printStackTrace();
@@ -57,15 +59,17 @@ public class BarangMasukController {
     public List<BarangMasuk> getDaftarBarangMasuk() {
         List<BarangMasuk> daftarBarang = new ArrayList<>();
         String query = "SELECT * FROM barang_masuk";
-        try (Statement stmt = connection.createStatement();
-                ResultSet rs = stmt.executeQuery(query)) {
+        try (Statement stmt = connection.createStatement()) {
+            ResultSet rs = stmt.executeQuery(query);
             while (rs.next()) {
                 int id = rs.getInt("id");
                 String nama = rs.getString("nama_barang");
+                String kategori = rs.getString("kategori");
                 int jumlah = rs.getInt("jumlah");
                 double harga = rs.getDouble("harga");
                 String tanggal = rs.getString("tanggal");
-                daftarBarang.add(new BarangMasuk(id, nama, jumlah, harga, tanggal));
+
+                daftarBarang.add(new BarangMasuk(id, nama, kategori, jumlah, harga, tanggal));
             }
         } catch (SQLException e) {
             e.printStackTrace();
@@ -83,10 +87,13 @@ public class BarangMasukController {
             if (rs.next()) {
                 int id = rs.getInt("id");
                 String nama = rs.getString("nama_barang");
+                String kategori = rs.getString("kategori");
                 int jumlah = rs.getInt("jumlah");
                 double harga = rs.getDouble("harga");
                 String tanggal = rs.getString("tanggal");
-                barang = new BarangMasuk(id, nama, jumlah, harga, tanggal);
+
+                // Membuat objek BarangMasuk
+                barang = new BarangMasuk(id, nama, kategori, jumlah, harga, tanggal);
             }
         } catch (SQLException e) {
             e.printStackTrace();

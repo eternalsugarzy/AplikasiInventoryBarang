@@ -17,7 +17,6 @@ import java.text.SimpleDateFormat;
 import java.text.ParseException;
 import java.util.Date;
 
-
 public class BarangKeluarView extends javax.swing.JFrame {
 
     private BarangKeluarController controller;
@@ -37,17 +36,16 @@ public class BarangKeluarView extends javax.swing.JFrame {
         tblBarangKeluar.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 int selectedRow = tblBarangKeluar.getSelectedRow();
-
                 if (selectedRow != -1) {
-                    // Ambil data dari tabel dan masukkan ke textfield
                     txtIdKeluar.setText(model.getValueAt(selectedRow, 0).toString());
-                    txtNamaBarangKeluar.setText(model.getValueAt(selectedRow, 1).toString());
-                    txtJumlahKeluar.setText(model.getValueAt(selectedRow, 2).toString());
+                    cmbNamaBarang.setSelectedItem(model.getValueAt(selectedRow, 1).toString());
+                    txtKategoriKeluar.setText(model.getValueAt(selectedRow, 2).toString());
+                    txtJumlahKeluar.setText(model.getValueAt(selectedRow, 3).toString());
 
-                    // Ambil data tanggal dari tabel dan set ke JDateChooser
-                    String tanggalString = model.getValueAt(selectedRow, 3).toString();
                     try {
-                        Date tanggal = new SimpleDateFormat("yyyy-MM-dd").parse(tanggalString);
+                        String tanggalString = model.getValueAt(selectedRow, 4).toString();
+                        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+                        Date tanggal = dateFormat.parse(tanggalString);
                         dateChooserKeluar.setDate(tanggal);
                     } catch (ParseException e) {
                         e.printStackTrace();
@@ -62,22 +60,35 @@ public class BarangKeluarView extends javax.swing.JFrame {
             }
         });
 
+        // Tambahkan event listener untuk combobox
         cmbNamaBarang.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 String selectedBarang = (String) cmbNamaBarang.getSelectedItem();
-                if (selectedBarang != null) {
+
+                // Cek apakah barang dipilih
+                if (selectedBarang != null && !selectedBarang.isEmpty()) {
+                    // Dapatkan data barang berdasarkan nama
                     BarangMasuk barang = barangMasukController.getBarangByNama(selectedBarang);
+
                     if (barang != null) {
+                        // Set field ID
                         txtIdKeluar.setText(String.valueOf(barang.getId()));
+
+                        // Set field Kategori
+                        txtKategoriKeluar.setText(barang.getKategori());
+
+                        // Set field Nama Barang
                         txtNamaBarangKeluar.setText(barang.getNamaBarang());
+
+                        // Set Jumlah
                         txtJumlahKeluar.setText(String.valueOf(barang.getJumlah()));
 
-                        // Set nilai pada JDateChooser
-                        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+                        // Set Tanggal ke JDateChooser
                         try {
-                            Date date = sdf.parse(barang.getTanggal());
-                            dateChooserKeluar.setDate(date);
+                            SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+                            Date tanggal = dateFormat.parse(barang.getTanggal());
+                            dateChooserKeluar.setDate(tanggal);
                         } catch (ParseException ex) {
                             ex.printStackTrace();
                         }
@@ -85,14 +96,14 @@ public class BarangKeluarView extends javax.swing.JFrame {
                 }
             }
         });
+        ;
 
     }
 
     private void tambahBarangKeluar() {
-        String nama = txtNamaBarangKeluar.getText();
+        String nama = (String) cmbNamaBarang.getSelectedItem();
+        String kategori = txtKategoriKeluar.getText();
         int jumlah = Integer.parseInt(txtJumlahKeluar.getText());
-
-        // Ambil tanggal dari JDateChooser
         Date tanggal = dateChooserKeluar.getDate();
         if (tanggal == null) {
             JOptionPane.showMessageDialog(this, "Tanggal tidak boleh kosong!");
@@ -101,7 +112,7 @@ public class BarangKeluarView extends javax.swing.JFrame {
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
         String tanggalFormatted = sdf.format(tanggal);
 
-        BarangKeluar barang = new BarangKeluar(0, nama, jumlah, tanggalFormatted);
+        BarangKeluar barang = new BarangKeluar(0, nama, kategori, jumlah, tanggalFormatted);
         controller.tambahBarangKeluar(barang);
         JOptionPane.showMessageDialog(this, "Barang keluar berhasil ditambahkan!");
         clearFields();
@@ -125,24 +136,41 @@ public class BarangKeluarView extends javax.swing.JFrame {
     private void perbaruiBarang() {
         int selectedRow = tblBarangKeluar.getSelectedRow();
         if (selectedRow != -1) {
-            int id = Integer.parseInt(txtIdKeluar.getText());
-            String nama = txtNamaBarangKeluar.getText();
-            int jumlah = Integer.parseInt(txtJumlahKeluar.getText());
+            // Ambil data dari tabel dan textfield
+            int id = (int) model.getValueAt(selectedRow, 0);
+            String nama = (String) cmbNamaBarang.getSelectedItem();
+            String kategori = txtKategoriKeluar.getText();
+            int jumlah;
 
             // Ambil tanggal dari JDateChooser
-            Date tanggal = dateChooserKeluar.getDate();
-            if (tanggal == null) {
-                JOptionPane.showMessageDialog(this, "Tanggal tidak boleh kosong!");
+            Date selectedDate = dateChooserKeluar.getDate();
+            SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+            String tanggal = (selectedDate != null) ? dateFormat.format(selectedDate) : null;
+
+            // Validasi input jumlah
+            try {
+                jumlah = Integer.parseInt(txtJumlahKeluar.getText());
+            } catch (NumberFormatException e) {
+                JOptionPane.showMessageDialog(this, "Jumlah harus berupa angka!");
                 return;
             }
-            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
-            String tanggalFormatted = sdf.format(tanggal);
 
-            // Update data di database
-            controller.updateBarangKeluar(id, nama, jumlah, tanggalFormatted);
-            JOptionPane.showMessageDialog(this, "Barang keluar berhasil diperbarui!");
-            clearFields();
-            loadData();
+            // Validasi jika kategori atau tanggal kosong
+            if (kategori.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "Kategori tidak boleh kosong!", "Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
+            if (tanggal != null) {
+                // Perbarui data di database
+                controller.updateBarangKeluar(id, nama, kategori, jumlah, tanggal);
+                JOptionPane.showMessageDialog(this, "Barang keluar berhasil diperbarui!");
+
+                clearFields();
+                loadData();
+            } else {
+                JOptionPane.showMessageDialog(this, "Tanggal tidak boleh kosong!", "Error", JOptionPane.ERROR_MESSAGE);
+            }
         } else {
             JOptionPane.showMessageDialog(this, "Pilih data yang ingin diperbarui!");
         }
@@ -150,12 +178,13 @@ public class BarangKeluarView extends javax.swing.JFrame {
 
     // Method untuk memuat data dari database ke tabel
     private void loadData() {
-        model.setRowCount(0); // Bersihkan tabel sebelum memuat data
-        List<BarangKeluar> daftarBarang = controller.getDaftarBarangKeluar();
-        for (BarangKeluar barang : daftarBarang) {
+        model.setRowCount(0);
+        List<BarangKeluar> daftarBarangKeluar = controller.getDaftarBarangKeluar();
+        for (BarangKeluar barang : daftarBarangKeluar) {
             model.addRow(new Object[]{
                 barang.getId(),
                 barang.getNamaBarang(),
+                barang.getKategori(),
                 barang.getJumlah(),
                 barang.getTanggal()
             });
@@ -163,9 +192,9 @@ public class BarangKeluarView extends javax.swing.JFrame {
     }
 
     private void loadNamaBarang() {
-        List<BarangMasuk> daftarBarangMasuk = barangMasukController.getDaftarBarangMasuk();
-        cmbNamaBarang.removeAllItems(); // Bersihkan item sebelumnya
-        for (BarangMasuk barang : daftarBarangMasuk) {
+        List<BarangMasuk> daftarBarang = barangMasukController.getDaftarBarangMasuk();
+        cmbNamaBarang.removeAllItems(); // Hapus item sebelumnya
+        for (BarangMasuk barang : daftarBarang) {
             cmbNamaBarang.addItem(barang.getNamaBarang());
         }
     }
@@ -173,7 +202,8 @@ public class BarangKeluarView extends javax.swing.JFrame {
     // Method untuk membersihkan field input
     private void clearFields() {
         txtIdKeluar.setText("");
-        txtNamaBarangKeluar.setText("");
+        cmbNamaBarang.setSelectedIndex(0);
+        txtKategoriKeluar.setText("");
         txtJumlahKeluar.setText("");
         dateChooserKeluar.setDate(null);
     }
@@ -247,6 +277,8 @@ public class BarangKeluarView extends javax.swing.JFrame {
         txtIdKeluar = new javax.swing.JTextField();
         dateChooserKeluar = new com.toedter.calendar.JDateChooser();
         cmbNamaBarang = new javax.swing.JComboBox<>();
+        lblNamaBarang2 = new javax.swing.JLabel();
+        txtKategoriKeluar = new javax.swing.JTextField();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
@@ -288,13 +320,13 @@ public class BarangKeluarView extends javax.swing.JFrame {
 
         tblBarangKeluar.setModel(new javax.swing.table.DefaultTableModel(
             new Object [][] {
-                {null, null, null, null},
-                {null, null, null, null},
-                {null, null, null, null},
-                {null, null, null, null}
+                {null, null, null, null, null},
+                {null, null, null, null, null},
+                {null, null, null, null, null},
+                {null, null, null, null, null}
             },
             new String [] {
-                "ID Barang", "Nama Barang", "Jumlah", "Tanggal Keluar"
+                "ID Barang", "Nama Barang", "Kategori", "Jumlah", "Tanggal Keluar"
             }
         ));
         jScrollPane1.setViewportView(tblBarangKeluar);
@@ -304,6 +336,8 @@ public class BarangKeluarView extends javax.swing.JFrame {
         lblNamaBarang1.setText("ID Barang");
 
         txtIdKeluar.setEditable(false);
+
+        lblNamaBarang2.setText("Kategori:");
 
         javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
         jPanel1.setLayout(jPanel1Layout);
@@ -317,16 +351,19 @@ public class BarangKeluarView extends javax.swing.JFrame {
                             .addComponent(lblNamaBarang)
                             .addComponent(lblJumlah)
                             .addComponent(lblNamaBarang1)
-                            .addComponent(lblTanggal))
+                            .addComponent(lblTanggal)
+                            .addComponent(lblNamaBarang2))
                         .addGap(50, 50, 50)
                         .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                            .addComponent(txtIdKeluar)
-                            .addComponent(txtJumlahKeluar, javax.swing.GroupLayout.DEFAULT_SIZE, 215, Short.MAX_VALUE)
-                            .addComponent(txtNamaBarangKeluar)
-                            .addComponent(dateChooserKeluar, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                            .addComponent(txtKategoriKeluar, javax.swing.GroupLayout.DEFAULT_SIZE, 215, Short.MAX_VALUE)
+                            .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                                .addComponent(txtIdKeluar)
+                                .addComponent(txtJumlahKeluar, javax.swing.GroupLayout.DEFAULT_SIZE, 215, Short.MAX_VALUE)
+                                .addComponent(txtNamaBarangKeluar)
+                                .addComponent(dateChooserKeluar, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
                         .addGap(18, 18, 18)
                         .addComponent(cmbNamaBarang, javax.swing.GroupLayout.PREFERRED_SIZE, 99, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 36, Short.MAX_VALUE)
                         .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
                             .addComponent(btnKeluar, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                             .addComponent(btnTambahKeluar, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
@@ -338,7 +375,7 @@ public class BarangKeluarView extends javax.swing.JFrame {
         jPanel1Layout.setVerticalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel1Layout.createSequentialGroup()
-                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
                     .addGroup(jPanel1Layout.createSequentialGroup()
                         .addComponent(btnTambahKeluar)
                         .addGap(16, 16, 16)
@@ -356,16 +393,18 @@ public class BarangKeluarView extends javax.swing.JFrame {
                             .addComponent(lblNamaBarang1))
                         .addGap(18, 18, 18)
                         .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addGroup(jPanel1Layout.createSequentialGroup()
-                                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                                    .addComponent(txtNamaBarangKeluar, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                    .addComponent(cmbNamaBarang, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                                .addGap(19, 19, 19)
-                                .addComponent(txtJumlahKeluar, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                            .addGroup(jPanel1Layout.createSequentialGroup()
-                                .addComponent(lblNamaBarang)
-                                .addGap(25, 25, 25)
-                                .addComponent(lblJumlah)))
+                            .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                                .addComponent(txtNamaBarangKeluar, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addComponent(cmbNamaBarang, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                            .addComponent(lblNamaBarang))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(txtKategoriKeluar, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(lblNamaBarang2))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(txtJumlahKeluar, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(lblJumlah))
                         .addGap(18, 18, 18)
                         .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addComponent(lblTanggal)
@@ -458,10 +497,12 @@ public class BarangKeluarView extends javax.swing.JFrame {
     private javax.swing.JLabel lblJumlah;
     private javax.swing.JLabel lblNamaBarang;
     private javax.swing.JLabel lblNamaBarang1;
+    private javax.swing.JLabel lblNamaBarang2;
     private javax.swing.JLabel lblTanggal;
     private javax.swing.JTable tblBarangKeluar;
     private javax.swing.JTextField txtIdKeluar;
     private javax.swing.JTextField txtJumlahKeluar;
+    private javax.swing.JTextField txtKategoriKeluar;
     private javax.swing.JTextField txtNamaBarangKeluar;
     // End of variables declaration//GEN-END:variables
 }
