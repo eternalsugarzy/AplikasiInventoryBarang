@@ -9,6 +9,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.List;
+import javax.swing.JOptionPane;
+import javax.swing.table.DefaultTableModel;
+import java.util.ArrayList;
+import java.text.DecimalFormat;
 
 public class StokView extends javax.swing.JFrame {
 
@@ -37,6 +41,9 @@ public class StokView extends javax.swing.JFrame {
     // Method untuk memuat data barang masuk dan keluar
     private void loadData() {
         model.setRowCount(0); // Membersihkan tabel sebelum memuat data baru
+
+        // DecimalFormat untuk format harga
+        DecimalFormat formatter = new DecimalFormat("#,###.00");
 
         // HashMap untuk menyimpan total jumlah barang berdasarkan nama
         Map<String, Integer> stokBarang = new HashMap<>();
@@ -67,11 +74,12 @@ public class StokView extends javax.swing.JFrame {
 
         // Tampilkan data di tabel
         for (String namaBarang : stokBarang.keySet()) {
+            String formattedPrice = formatter.format(hargaBarang.getOrDefault(namaBarang, 0.0)); // Format harga
             model.addRow(new Object[]{
                 namaBarang,
                 kategoriBarang.getOrDefault(namaBarang, "-"), // Kategori
                 stokBarang.get(namaBarang), // Jumlah total
-                hargaBarang.getOrDefault(namaBarang, 0.0), // Harga
+                formattedPrice, // Harga dengan format
                 tanggalBarang.getOrDefault(namaBarang, "-"), // Tanggal terakhir
                 keteranganBarang.getOrDefault(namaBarang, "-") // Keterangan (Masuk/Keluar)
             });
@@ -97,6 +105,8 @@ public class StokView extends javax.swing.JFrame {
         jScrollPane1 = new javax.swing.JScrollPane();
         tblStok = new javax.swing.JTable();
         btnKeluar = new javax.swing.JButton();
+        txtSearch = new javax.swing.JTextField();
+        btnSearch = new javax.swing.JButton();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
@@ -117,24 +127,37 @@ public class StokView extends javax.swing.JFrame {
 
         btnKeluar.setText("Keluar");
 
+        btnSearch.setText("Cari");
+        btnSearch.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnSearchActionPerformed(evt);
+            }
+        });
+
         javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
         jPanel1.setLayout(jPanel1Layout);
         jPanel1Layout.setHorizontalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 587, Short.MAX_VALUE)
             .addGroup(jPanel1Layout.createSequentialGroup()
-                .addGap(237, 237, 237)
+                .addComponent(txtSearch, javax.swing.GroupLayout.PREFERRED_SIZE, 113, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(27, 27, 27)
+                .addComponent(btnSearch)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                 .addComponent(btnKeluar)
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addContainerGap())
         );
         jPanel1Layout.setVerticalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel1Layout.createSequentialGroup()
                 .addContainerGap()
                 .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 354, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                .addComponent(btnKeluar)
-                .addContainerGap(89, Short.MAX_VALUE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(btnKeluar)
+                    .addComponent(txtSearch, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(btnSearch))
+                .addContainerGap(95, Short.MAX_VALUE))
         );
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
@@ -156,6 +179,29 @@ public class StokView extends javax.swing.JFrame {
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
+
+    private void btnSearchActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnSearchActionPerformed
+        String keyword = txtSearch.getText(); // Ambil input dari txtSearch
+
+        if (keyword.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Masukkan kata kunci untuk pencarian!");
+        } else {
+            // Panggil method pencarian
+            ArrayList<String[]> results = BarangMasukController.searchStok(keyword);
+
+            // Tampilkan hasil di tabel
+            DefaultTableModel model = (DefaultTableModel) tblStok.getModel(); // Sesuaikan nama tabel Anda
+            model.setRowCount(0); // Bersihkan tabel sebelum menampilkan hasil baru
+
+            for (String[] row : results) {
+                model.addRow(row); // Tambahkan baris hasil pencarian
+            }
+
+            if (results.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "Data tidak ditemukan.");
+            }
+        }
+    }//GEN-LAST:event_btnSearchActionPerformed
 
     /**
      * @param args the command line arguments
@@ -194,8 +240,10 @@ public class StokView extends javax.swing.JFrame {
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton btnKeluar;
+    private javax.swing.JButton btnSearch;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JTable tblStok;
+    private javax.swing.JTextField txtSearch;
     // End of variables declaration//GEN-END:variables
 }

@@ -186,7 +186,7 @@
         </Component>
         <Component class="javax.swing.JLabel" name="lblHarga">
           <Properties>
-            <Property name="text" type="java.lang.String" value="Harga"/>
+            <Property name="text" type="java.lang.String" value="Harga (dalam jt)"/>
           </Properties>
         </Component>
         <Component class="javax.swing.JLabel" name="lblTanggal">

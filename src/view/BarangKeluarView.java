@@ -290,6 +290,8 @@ public class BarangKeluarView extends javax.swing.JFrame {
 
         lblTanggal.setText("Tanggal Keluar:");
 
+        txtNamaBarangKeluar.setEditable(false);
+
         btnTambahKeluar.setText("Tambah");
         btnTambahKeluar.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -339,6 +341,8 @@ public class BarangKeluarView extends javax.swing.JFrame {
 
         lblNamaBarang2.setText("Kategori:");
 
+        txtKategoriKeluar.setEditable(false);
+
         javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
         jPanel1.setLayout(jPanel1Layout);
         jPanel1Layout.setHorizontalGroup(
@@ -356,11 +360,10 @@ public class BarangKeluarView extends javax.swing.JFrame {
                         .addGap(50, 50, 50)
                         .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
                             .addComponent(txtKategoriKeluar, javax.swing.GroupLayout.DEFAULT_SIZE, 215, Short.MAX_VALUE)
-                            .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                                .addComponent(txtIdKeluar)
-                                .addComponent(txtJumlahKeluar, javax.swing.GroupLayout.DEFAULT_SIZE, 215, Short.MAX_VALUE)
-                                .addComponent(txtNamaBarangKeluar)
-                                .addComponent(dateChooserKeluar, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
+                            .addComponent(txtIdKeluar)
+                            .addComponent(txtJumlahKeluar, javax.swing.GroupLayout.DEFAULT_SIZE, 215, Short.MAX_VALUE)
+                            .addComponent(txtNamaBarangKeluar)
+                            .addComponent(dateChooserKeluar, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                         .addGap(18, 18, 18)
                         .addComponent(cmbNamaBarang, javax.swing.GroupLayout.PREFERRED_SIZE, 99, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 36, Short.MAX_VALUE)

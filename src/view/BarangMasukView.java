@@ -9,6 +9,7 @@ import java.util.List;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.text.DecimalFormat;
 
 public class BarangMasukView extends javax.swing.JFrame {
 
@@ -154,13 +155,19 @@ public class BarangMasukView extends javax.swing.JFrame {
         model.setRowCount(0); // Bersihkan tabel sebelum memuat data baru
         List<BarangMasuk> daftarBarang = controller.getDaftarBarangMasuk();
 
+        // Tambahkan formatter untuk harga
+        DecimalFormat formatter = new DecimalFormat("#,###.00");
+
         for (BarangMasuk barang : daftarBarang) {
+            // Format harga sebelum ditampilkan
+            String formattedPrice = formatter.format(barang.getHarga());
+
             model.addRow(new Object[]{
                 barang.getId(),
                 barang.getNamaBarang(),
                 barang.getKategori(),
                 barang.getJumlah(),
-                barang.getHarga(),
+                formattedPrice, // Gunakan harga yang diformat
                 barang.getTanggal()
             });
         }
@@ -249,7 +256,7 @@ public class BarangMasukView extends javax.swing.JFrame {
 
         lblJumlah.setText("Jumlah:");
 
-        lblHarga.setText("Harga");
+        lblHarga.setText("Harga (dalam jt)");
 
         lblTanggal.setText("Tanggal Masuk:");
 

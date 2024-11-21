@@ -4,8 +4,45 @@ import model.BarangMasuk;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.util.ArrayList;
 
 public class BarangMasukController {
+
+    public static ArrayList<String[]> searchStok(String keyword) {
+        ArrayList<String[]> results = new ArrayList<>();
+
+        try {
+            Connection conn = DatabaseConnection.getConnection();
+            String sql = "SELECT id, nama_barang, kategori, jumlah, harga, tanggal FROM barang_masuk WHERE nama_barang LIKE ?";
+            PreparedStatement stmt = conn.prepareStatement(sql);
+            stmt.setString(1, "%" + keyword + "%"); // Pencarian dengan LIKE
+
+            ResultSet rs = stmt.executeQuery();
+
+            while (rs.next()) {
+                String[] row = {
+                    rs.getString("id"),
+                    rs.getString("nama_barang"),
+                    rs.getString("kategori"),
+                    rs.getString("jumlah"),
+                    rs.getString("harga"),
+                    rs.getString("tanggal")
+                };
+                results.add(row);
+            }
+
+            rs.close();
+            stmt.close();
+            conn.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return results;
+    }
 
     private Connection connection;
 
