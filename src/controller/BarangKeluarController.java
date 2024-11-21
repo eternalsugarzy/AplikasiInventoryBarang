@@ -13,16 +13,46 @@ public class BarangKeluarController {
         connection = DatabaseConnection.getConnection();
     }
 
-    public void tambahBarangKeluar(BarangKeluar barang) {
-        String query = "INSERT INTO barang_keluar (nama_barang, kategori, jumlah, tanggal) VALUES (?, ?, ?, ?)";
-        try (PreparedStatement stmt = connection.prepareStatement(query)) {
-            stmt.setString(1, barang.getNamaBarang());
-            stmt.setString(2, barang.getKategori());
-            stmt.setInt(3, barang.getJumlah());
-            stmt.setString(4, barang.getTanggal());
-            stmt.executeUpdate();
+    public boolean tambahBarangKeluar(BarangKeluar barang) {
+        String cekStokQuery = "SELECT jumlah FROM stok WHERE nama_barang = ?";
+        String kurangiStokQuery = "UPDATE stok SET jumlah = jumlah - ? WHERE nama_barang = ?";
+        String insertBarangKeluarQuery = "INSERT INTO barang_keluar (nama_barang, jumlah, tanggal, kategori) VALUES (?, ?, ?, ?)";
+
+        try (Connection conn = DatabaseConnection.getConnection();
+                PreparedStatement cekStokStmt = conn.prepareStatement(cekStokQuery);
+                PreparedStatement kurangiStokStmt = conn.prepareStatement(kurangiStokQuery);
+                PreparedStatement insertStmt = conn.prepareStatement(insertBarangKeluarQuery)) {
+
+            // Cek stok terlebih dahulu
+            cekStokStmt.setString(1, barang.getNamaBarang());
+            ResultSet rs = cekStokStmt.executeQuery();
+            if (rs.next()) {
+                int stokTersedia = rs.getInt("jumlah");
+                if (stokTersedia < barang.getJumlah()) {
+                    System.out.println("Stok tidak mencukupi untuk barang: " + barang.getNamaBarang());
+                    return false;
+                }
+            } else {
+                System.out.println("Barang tidak ditemukan di stok: " + barang.getNamaBarang());
+                return false;
+            }
+
+            // Kurangi stok
+            kurangiStokStmt.setInt(1, barang.getJumlah());
+            kurangiStokStmt.setString(2, barang.getNamaBarang());
+            kurangiStokStmt.executeUpdate();
+
+            // Masukkan data ke tabel barang_keluar
+            insertStmt.setString(1, barang.getNamaBarang());
+            insertStmt.setInt(2, barang.getJumlah());
+            insertStmt.setString(3, barang.getTanggal());
+            insertStmt.setString(4, barang.getKategori());
+            int rows = insertStmt.executeUpdate();
+
+            return rows > 0; // Return true jika data berhasil ditambahkan
         } catch (SQLException e) {
             e.printStackTrace();
+            return false;
         }
     }
 
