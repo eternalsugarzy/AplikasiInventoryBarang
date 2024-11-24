@@ -20,14 +20,25 @@ import java.io.IOException;
 import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
 import javax.swing.table.DefaultTableModel;
-
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
+import javax.swing.JFileChooser;
+import javax.swing.JOptionPane;
+import com.itextpdf.text.Document;
+import com.itextpdf.text.DocumentException;
+import com.itextpdf.text.Paragraph;
+import com.itextpdf.text.Phrase;
+import com.itextpdf.text.pdf.PdfPCell;
+import com.itextpdf.text.pdf.PdfPTable;
+import com.itextpdf.text.pdf.PdfWriter;
+import java.io.FileOutputStream;
 
 public class StokView extends javax.swing.JFrame {
 
     private BarangMasukController barangMasukController;
     private BarangKeluarController barangKeluarController;
     private DefaultTableModel model;
-    
 
     /**
      * Creates new form StokView
@@ -104,31 +115,136 @@ public class StokView extends javax.swing.JFrame {
             File fileToSave = fileChooser.getSelectedFile();
             String filePath = fileToSave.getAbsolutePath();
 
+            // Tambahkan ekstensi ".txt" jika belum ada
             if (!filePath.endsWith(".txt")) {
                 filePath += ".txt";
             }
 
             try (BufferedWriter writer = new BufferedWriter(new FileWriter(filePath))) {
-                // Ambil model dari tabel
-                DefaultTableModel model = (DefaultTableModel) tblStok.getModel();
-
                 // Tulis header kolom
                 writer.write("Nama Barang\tKategori\tJumlah\tHarga\tTanggal\tKeterangan");
                 writer.newLine();
 
-                // Iterasi melalui data di tabel
+                // Iterasi melalui data di tabel dan tulis ke file
                 for (int i = 0; i < model.getRowCount(); i++) {
                     for (int j = 0; j < model.getColumnCount(); j++) {
-                        writer.write(model.getValueAt(i, j).toString());
+                        Object value = model.getValueAt(i, j);
+
+                        if (j == 3 && value != null) { // Format kolom harga (indeks ke-3)
+                            // Hapus koma pemisah ribuan menggunakan replaceAll
+                            String harga = value.toString().replace(",", "");
+                            writer.write(harga);
+                        } else {
+                            writer.write(value != null ? value.toString() : "");
+                        }
+
                         if (j < model.getColumnCount() - 1) {
                             writer.write("\t"); // Pisahkan kolom dengan tab
                         }
                     }
-                    writer.newLine(); // Pindah ke baris baru
+                    writer.newLine(); // Pindah ke baris berikutnya
                 }
 
-                JOptionPane.showMessageDialog(this, "Data berhasil diekspor ke " + filePath);
+                JOptionPane.showMessageDialog(this, "Data berhasil diekspor ke: " + filePath);
             } catch (IOException e) {
+                JOptionPane.showMessageDialog(this, "Gagal mengekspor data: " + e.getMessage());
+            }
+        }
+    }
+
+    private void importFromTXT() {
+        JFileChooser fileChooser = new JFileChooser();
+        fileChooser.setDialogTitle("Pilih File TXT untuk Diimpor");
+
+        int userSelection = fileChooser.showOpenDialog(this);
+        if (userSelection == JFileChooser.APPROVE_OPTION) {
+            File fileToImport = fileChooser.getSelectedFile();
+
+            try (BufferedReader reader = new BufferedReader(new FileReader(fileToImport))) {
+                String line;
+                boolean isHeader = true; // Flag untuk melewati header
+
+                while ((line = reader.readLine()) != null) {
+                    if (isHeader) {
+                        isHeader = false; // Lewati baris pertama (header)
+                        continue;
+                    }
+
+                    // Pecah baris berdasarkan tab '\t'
+                    String[] data = line.split("\t");
+
+                    if (data.length >= 6) { // Pastikan jumlah kolom sesuai
+                        String namaBarang = data[0];
+                        String kategori = data[1];
+                        int jumlah = Integer.parseInt(data[2]);
+                        double harga = Double.parseDouble(data[3]);
+                        String tanggal = data[4];
+                        String keterangan = data[5];
+
+                        // Tambahkan data ke tabel stok
+                        model.addRow(new Object[]{namaBarang, kategori, jumlah, harga, tanggal, keterangan});
+
+                        // (Opsional) Tambahkan ke database stok
+                        // stokController.tambahDataStok(new Stok(namaBarang, kategori, jumlah, harga, tanggal, keterangan));
+                    }
+                }
+                JOptionPane.showMessageDialog(this, "Data berhasil diimpor dari: " + fileToImport.getAbsolutePath());
+            } catch (IOException e) {
+                JOptionPane.showMessageDialog(this, "Gagal membaca file: " + e.getMessage());
+            } catch (NumberFormatException e) {
+                JOptionPane.showMessageDialog(this, "Format data di file tidak valid: " + e.getMessage());
+            }
+        }
+    }
+
+    private void exportToPDF() {
+        JFileChooser fileChooser = new JFileChooser();
+        fileChooser.setDialogTitle("Simpan File PDF");
+        int userSelection = fileChooser.showSaveDialog(this);
+
+        if (userSelection == JFileChooser.APPROVE_OPTION) {
+            File fileToSave = fileChooser.getSelectedFile();
+            String filePath = fileToSave.getAbsolutePath();
+
+            // Tambahkan ekstensi ".pdf" jika tidak ada
+            if (!filePath.endsWith(".pdf")) {
+                filePath += ".pdf";
+            }
+
+            try {
+                // Membuat dokumen PDF
+                com.itextpdf.text.Document document = new com.itextpdf.text.Document();
+                PdfWriter.getInstance(document, new FileOutputStream(filePath));
+                document.open();
+
+                // Menambahkan judul
+                document.add(new Paragraph("Laporan Stok Barang"));
+                document.add(new Paragraph("Tanggal: " + java.time.LocalDate.now()));
+                document.add(new Paragraph(" ")); // Spasi
+
+                // Membuat tabel PDF
+                PdfPTable table = new PdfPTable(model.getColumnCount());
+                table.setWidthPercentage(100);
+
+                // Menambahkan header kolom
+                for (int i = 0; i < model.getColumnCount(); i++) {
+                    table.addCell(new PdfPCell(new Phrase(model.getColumnName(i))));
+                }
+
+                // Menambahkan data baris dari JTable
+                for (int i = 0; i < model.getRowCount(); i++) {
+                    for (int j = 0; j < model.getColumnCount(); j++) {
+                        Object cellValue = model.getValueAt(i, j);
+                        table.addCell(new PdfPCell(new Phrase(cellValue != null ? cellValue.toString() : "")));
+                    }
+                }
+
+                // Tambahkan tabel ke dokumen
+                document.add(table);
+                document.close();
+
+                JOptionPane.showMessageDialog(this, "Data berhasil diekspor ke " + filePath);
+            } catch (Exception e) {
                 JOptionPane.showMessageDialog(this, "Gagal mengekspor data: " + e.getMessage());
             }
         }
@@ -156,6 +272,8 @@ public class StokView extends javax.swing.JFrame {
         txtSearch = new javax.swing.JTextField();
         btnSearch = new javax.swing.JButton();
         jButton1 = new javax.swing.JButton();
+        btnImport = new javax.swing.JButton();
+        btnEksportPdf = new javax.swing.JButton();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
@@ -183,10 +301,24 @@ public class StokView extends javax.swing.JFrame {
             }
         });
 
-        jButton1.setText("Eksport Data");
+        jButton1.setText("Eksport Data TXT");
         jButton1.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jButton1ActionPerformed(evt);
+            }
+        });
+
+        btnImport.setText("Import Data TXT");
+        btnImport.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnImportActionPerformed(evt);
+            }
+        });
+
+        btnEksportPdf.setText("Eksport Data PDF");
+        btnEksportPdf.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnEksportPdfActionPerformed(evt);
             }
         });
 
@@ -195,14 +327,19 @@ public class StokView extends javax.swing.JFrame {
         jPanel1Layout.setHorizontalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 587, Short.MAX_VALUE)
-            .addGroup(jPanel1Layout.createSequentialGroup()
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createSequentialGroup()
                 .addComponent(txtSearch, javax.swing.GroupLayout.PREFERRED_SIZE, 113, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(27, 27, 27)
                 .addComponent(btnSearch)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                .addComponent(jButton1)
-                .addGap(26, 26, 26)
-                .addComponent(btnKeluar)
+                .addComponent(btnImport)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(btnEksportPdf)
+                    .addGroup(jPanel1Layout.createSequentialGroup()
+                        .addComponent(jButton1)
+                        .addGap(26, 26, 26)
+                        .addComponent(btnKeluar)))
                 .addContainerGap())
         );
         jPanel1Layout.setVerticalGroup(
@@ -215,8 +352,11 @@ public class StokView extends javax.swing.JFrame {
                     .addComponent(btnKeluar)
                     .addComponent(txtSearch, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(btnSearch)
-                    .addComponent(jButton1))
-                .addContainerGap(95, Short.MAX_VALUE))
+                    .addComponent(jButton1)
+                    .addComponent(btnImport))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(btnEksportPdf)
+                .addContainerGap(63, Short.MAX_VALUE))
         );
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
@@ -266,6 +406,14 @@ public class StokView extends javax.swing.JFrame {
         exportToTXT();
     }//GEN-LAST:event_jButton1ActionPerformed
 
+    private void btnImportActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnImportActionPerformed
+        importFromTXT();
+    }//GEN-LAST:event_btnImportActionPerformed
+
+    private void btnEksportPdfActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnEksportPdfActionPerformed
+        exportToPDF();
+    }//GEN-LAST:event_btnEksportPdfActionPerformed
+
     /**
      * @param args the command line arguments
      */
@@ -302,6 +450,8 @@ public class StokView extends javax.swing.JFrame {
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JButton btnEksportPdf;
+    private javax.swing.JButton btnImport;
     private javax.swing.JButton btnKeluar;
     private javax.swing.JButton btnSearch;
     private javax.swing.JButton jButton1;
